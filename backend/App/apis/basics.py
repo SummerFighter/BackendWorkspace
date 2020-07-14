@@ -68,7 +68,7 @@ def upload():
         db.session.add(videoTag)
         db.session.commit()
     # 文件写入磁盘
-    file.save("App/static/videos"+video_id+".mp4")
+    file.save("App/static/videos/"+video_id+".mp4")
     # 将结果返回客户端
     resp = {"msg": "upload ok"}
     return json.dumps(resp)
