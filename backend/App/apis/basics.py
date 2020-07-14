@@ -179,7 +179,7 @@ def getRecommendedVideo():
             temp['url'] = realUrl
             temp['release_time'] = temp['release_time'].strftime('%Y-%m-%d %H: %M: %S')
             outList.append(temp)
-        resp = json.dumps(outList)
+        resp = json.dumps(outList, ensure_ascii=False)
         return resp
     # 有登陆状态
     else:
@@ -198,7 +198,7 @@ def getAllVideos():
         temp['release_time'] = temp['release_time'].strftime('%Y-%m-%d %H: %M: %S')
         outList.append(temp)
     print(outList)
-    resp = json.dumps(outList)
+    resp = json.dumps(outList, ensure_ascii=False)
     return resp
 
 
