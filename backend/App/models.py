@@ -80,3 +80,10 @@ class VideoTag(db.Model):
 if __name__ == '__main__':
     db.drop_all()
     db.create_all()
+
+
+# sqlalchemy到dist对象
+def serialize(model):
+    from sqlalchemy.orm import class_mapper
+    columns = [c.key for c in class_mapper(model.__class__).columns]
+    return dict((c, getattr(model, c)) for c in columns)

@@ -1,10 +1,11 @@
+# coding:utf-8
+
 from flask import request
 import uuid
 import datetime
 import json
 from App import app, db
-from App.models import User, Video, VideoTag, LikesCollects, UserTag, Comments
-
+from App.models import User, Video, VideoTag, LikesCollects, UserTag, Comments, serialize
 
 HOST = "47.104.232.108/"
 
@@ -174,7 +175,10 @@ def getRecommendedVideo():
             .order_by(-Video.like_num / Video.play_num).limit(5).all()
         for i in result:
             realUrl = HOST + i.url
-            outList.append(realUrl)
+            temp = serialize(i)
+            temp['url'] = realUrl
+            temp['release_time'] = temp['release_time'].strftime('%Y-%m-%d %H: %M: %S')
+            outList.append(temp)
         resp = json.dumps(outList)
         return resp
     # 有登陆状态
@@ -189,6 +193,16 @@ def getAllVideos():
     outList = []
     for i in result:
         realUrl = HOST + i.url
-        outList.append(realUrl)
+        temp = serialize(i)
+        temp['url'] = realUrl
+        temp['release_time'] = temp['release_time'].strftime('%Y-%m-%d %H: %M: %S')
+        outList.append(temp)
+    print(outList)
     resp = json.dumps(outList)
     return resp
+
+
+
+
+
+
