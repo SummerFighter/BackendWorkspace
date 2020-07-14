@@ -6,6 +6,9 @@ from App import app, db
 from App.models import User, Video, VideoTag, LikesCollects, UserTag, Comments
 
 
+HOST = "47.104.232.108/"
+
+
 @app.route('/')
 def hello_world():
     return '服务器正常运行'
@@ -14,13 +17,17 @@ def hello_world():
 # 用户注册
 @app.route('/register', methods=["POST"])
 def register():
-    account = str(uuid.uuid1())
+    account = request.values.get("account")
     password = request.values.get("password")
     username = request.values.get("name")
-    user = User(account=account, password=password, username=username, balance=0)
-    db.session.add(user)
-    db.session.commit()
-    return {"msg": "注册成功", "account": account}
+    user = db.session.query(User).filter_by(account=account).first()
+    if user is None:
+        user = User(account=account, password=password, username=username, balance=0)
+        db.session.add(user)
+        db.session.commit()
+        return {"msg": "注册成功"}
+    else:
+        return {"msg": "用户已存在"}
 
 
 # 登陆
@@ -39,7 +46,7 @@ def login():
 
 
 # 上传视频
-@app.route('/upload', methods=['POST', 'GET'])
+@app.route('/upload', methods=['POST'])
 def upload():
     # 从前端获取的各种参数
     file = request.files['video']
@@ -61,7 +68,7 @@ def upload():
         db.session.add(videoTag)
         db.session.commit()
     # 文件写入磁盘
-    file.save("App/"+url)
+    file.save("App/static/videos"+video_id+".mp4")
     # 将结果返回客户端
     resp = {"msg": "upload ok"}
     return json.dumps(resp)
@@ -153,9 +160,10 @@ def setComment():
     return {"msg": "评论成功"}
 
 
-# 获取推荐视频 TODO 还没完
-@app.route("/getRecommendedVideo", methods=['GET'])
+# 获取推荐视频
+@app.route("/getRecommendedVideo", methods=['POST'])
 def getRecommendedVideo():
+    outList = []
     account = request.values.get("account")
     # 无登陆状态 没有用户
     if account is None:
@@ -163,6 +171,24 @@ def getRecommendedVideo():
         start = datetime.datetime.now() + datetime.timedelta(days=-1)
         # 按like_num/play_num的顺序返回
         result = db.session.query(Video).filter(Video.release_time > start) \
-            .order_by(-Video.like_num / Video.play_num).limit(10).all()
+            .order_by(-Video.like_num / Video.play_num).limit(5).all()
+        for i in result:
+            realUrl = HOST + i.url
+            outList.append(realUrl)
+        resp = json.dumps(outList)
+        return resp
+    # 有登陆状态
+    else:
+        return {"msg": "还没有做呢！"}
 
-        return result
+
+# 获取全部视频 测试用
+@app.route("/getAllVideos", methods=['POST'])
+def getAllVideos():
+    result = db.session.query(Video).all()
+    outList = []
+    for i in result:
+        realUrl = HOST + i.url
+        outList.append(realUrl)
+    resp = json.dumps(outList)
+    return resp
