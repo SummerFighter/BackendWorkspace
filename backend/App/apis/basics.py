@@ -15,7 +15,7 @@ def hello_world():
 
 
 # 用户注册
-@app.route('/register', methods=["POST"])
+@app.route('/register', methods=["POST","GET"])
 def register():
     account = request.values.get("account")
     password = request.values.get("password")
@@ -25,13 +25,13 @@ def register():
         user = User(account=account, password=password, username=username, balance=0)
         db.session.add(user)
         db.session.commit()
-        return {"msg": "注册成功"}
+        return {"msg": "ok"}
     else:
         return {"msg": "用户已存在"}
 
 
 # 修改信息
-@app.route('/setUserInfo',methods=['POST'])
+@app.route('/setUserInfo',methods=['POST','GET'])
 def setUserInfo():
     file = request.files['image']
     account = request.values.get("account")
@@ -43,18 +43,18 @@ def setUserInfo():
     user.password = password
     user.username = username
     db.session.commit()
-    return {"msg": "修改成功"}
+    return {"msg": "ok"}
 
 
 # 登陆
-@app.route('/login', methods=["POST"])
+@app.route('/login', methods=["POST","GET"])
 def login():
     account = request.values.get("account")
     password = request.values.get("password")
     user = db.session.query(User).filter_by(account=account).first()
     if user is not None:
         if user.password == password:
-            return {"msg": "登陆成功"}
+            return {"msg": "ok"}
         else:
             return {"msg": "密码错误"}
     else:
@@ -62,7 +62,7 @@ def login():
 
 
 # 上传视频
-@app.route('/upload', methods=['POST'])
+@app.route('/upload', methods=['POST',"GET"])
 def upload():
     # 从前端获取的各种参数
     file = request.files['video']
@@ -86,12 +86,12 @@ def upload():
     # 文件写入磁盘
     file.save("App/static/videos/"+video_id+".mp4")
     # 将结果返回客户端
-    resp = {"msg": "upload ok"}
+    resp = {"msg": "ok"}
     return json.dumps(resp)
 
 
 # 视频点赞和取消点赞
-@app.route("/getALike", methods=['POST'])
+@app.route("/getALike", methods=['POST','GET'])
 def likeAndDislike():
     flag = request.values.get("flag")
     account = request.values.get("account")
@@ -119,11 +119,11 @@ def likeAndDislike():
             lc = LikesCollects(account=account, video_id=videoID, if_like=True, like_time=datetime.datetime.now())
             db.session.add(lc)
     db.session.commit()
-    return {"msg": "操作成功"}
+    return {"msg": "ok"}
 
 
 # 视频收藏
-@app.route("/getCollected", methods=['POST'])
+@app.route("/getCollected", methods=['POST','GET'])
 def getCollected():
     flag = request.values.get("flag")
     account = request.values.get("account")
@@ -148,11 +148,11 @@ def getCollected():
             lc = LikesCollects(account=account, video_id=videoID, if_collected=True)
             db.session.add(lc)
     db.session.commit()
-    return {"msg": "操作成功"}
+    return {"msg": "ok"}
 
 
 # 设置用户标签
-@app.route("/setUserTag", methods=["POST"])
+@app.route("/setUserTag", methods=["POST",'GET'])
 def setUserTag():
     account = request.values.get("account")
     tags = request.values.getlist("favoriteTag")
@@ -160,11 +160,11 @@ def setUserTag():
         userTag = UserTag(account=account, favorite_tag=i)
         db.session.add(userTag)
         db.session.commit()
-    return {"msg": "设置成功"}
+    return {"msg": "ok"}
 
 
 # 评论视频
-@app.route("/setComment", methods=['POST'])
+@app.route("/setComment", methods=['POST','GET'])
 def setComment():
     account = request.values.get("account")
     videoID = request.values.get("videoID")
@@ -174,45 +174,45 @@ def setComment():
     comment = Comments(id=cid, account=account, video_id=videoID, content=content, head_comment_id=upper_id,release_time=datetime.datetime.now())
     db.session.add(comment)
     db.session.commit()
-    return {"msg": "评论成功", "comment_id": cid}
+    return {"msg": "ok", "comment_id": cid}
 
 
 # 获取某视频评论树
-@app.route("/videoComments", methods=['POST'])
+@app.route("/videoComments", methods=['POST','GET'])
 def videoComments():
     videoID = request.values.get("videoID")
     comments = db.session.query(Comments).filter_by(video_id=videoID).all()
     outList = outComments(comments)
-    return {"comment":outList}
+    return {"comment": outList}
 
 
 # 获取推荐视频
-@app.route("/getRecommendedVideo", methods=['POST'])
+@app.route("/getRecommendedVideo", methods=['POST','GET'])
 def getRecommendedVideo():
     account = request.values.get("account")
+    # 时间范围 前一天到现在
+    start = datetime.datetime.now() + datetime.timedelta(days=-1)
     # 无登陆状态 没有用户
-    if account is None:
-        # 时间范围 前一天到现在
-        start = datetime.datetime.now() + datetime.timedelta(days=-1)
+    if account == '0':
         # 按like_num/play_num的顺序返回
         result = db.session.query(Video).filter(Video.release_time > start) \
             .order_by(-Video.like_num / Video.play_num).limit(5).all()
         outList = outVideos(result)
-        return {"videos":outList}
+        return {"videos": outList}
     # 有登陆状态
     else:
         return {"msg": "还没有做呢！"}
 
 
 # 获取全部视频 测试用
-@app.route("/getAllVideos", methods=['POST'])
+@app.route("/getAllVideos", methods=['POST','GET'])
 def getAllVideos():
     result = db.session.query(Video).all()
     outList = outVideos(result)
-    return {"videos":outList}
+    return {"videos": outList}
 
 
-@app.route("/follow", methods=['POST'])
+@app.route("/follow", methods=['POST','GET'])
 def follow():
     flag = request.values.get("flag")
     account = request.values.get("toFollow")
@@ -221,7 +221,7 @@ def follow():
         f = Follow(account=account, follower=follower)
         db.session.add(f)
         db.session.commit()
-        return {"msg": "follow ok"}
+        return {"msg": "ok"}
     else:
         # f = db.session.query(Follow).filter_by(account=account, follower=follower).all()
         # db.session.delete(f)
@@ -230,7 +230,7 @@ def follow():
 
 
 # TODO 还没有排序
-@app.route("/userNew", methods=['POST'])
+@app.route("/userNew", methods=['POST','GET'])
 def userNew():
     account = request.values.get("account")
     # 时间范围 半年前到现在
