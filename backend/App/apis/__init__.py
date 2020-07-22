@@ -1,2 +1,2 @@
-from App.apis import basics
+from App.apis import basics, search
 

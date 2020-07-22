@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy.orm import relationship
 
 from App import db
@@ -10,9 +12,13 @@ class User(db.Model):
     username = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
     balance = db.Column(db.Float)
+    area = db.Column(db.String(50))
+    gender = db.Column(db.String(10))
+    birth = db.Column(db.Date)
+    school = db.Column(db.String(50))
     upload_videos = relationship("Video", backref="user")  # 上传的视频列表
     tags = relationship("UserTag", backref="user")  # 用户标签
-    avatarUrl = db.Column(db.String(200), default="/static/avatars/defaultAvatar.jpg")
+    avatarUrl = db.Column(db.String(200), default="static/avatars/defaultAvatar.jpg")
 
 
 # 视频
@@ -23,22 +29,21 @@ class Video(db.Model):
     url = db.Column(db.String(500), unique=True)  # 相对url 根目录下的位置 其实可以不要？
     info = db.Column(db.Text)  # 视频简介
     release_time = db.Column(db.DateTime)
-    play_num = db.Column(db.BigInteger, default=0)  # 播放量
+    play_num = db.Column(db.BigInteger, default=1)  # 播放量
     like_num = db.Column(db.BigInteger, default=0)  # 点赞量
-    coll_num = db.Column(db.BigInteger, default=0)  # 收藏数量
     comment_num = db.Column(db.BigInteger, default=0)  # 评论数量
+    cover_url = db.Column(db.String(200))
     account = db.Column(db.String(100), db.ForeignKey('user.account'))  # 上传者
     tags = relationship("VideoTag", backref="video")
 
 
-# 用户对视频的点赞、收藏表
+# 用户对视频的点赞表
 class LikesCollects(db.Model):
     __tablename__ = "user_video_list"
     account = db.Column(db.String(100), primary_key=True)
     video_id = db.Column(db.String(200), primary_key=True)
     if_like = db.Column(db.Boolean, default=False)
     like_time = db.Column(db.DateTime)
-    if_collected = db.Column(db.Boolean, default=False)
 
 
 # 视频评论表
@@ -79,7 +84,7 @@ class VideoTag(db.Model):
 class Follow(db.Model):
     __tablename__ = "user_follow"
     account = db.Column(db.String(100), primary_key=True)
-    follower = db.Column(db.String(100))
+    follower = db.Column(db.String(100),primary_key=True)
 
 
 # 当models.py直接被运行时运行，重新创建表

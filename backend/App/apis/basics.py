@@ -6,7 +6,7 @@ import datetime
 import json
 from App import app, db
 from App.models import User, Video, VideoTag, LikesCollects, UserTag, Comments, Follow
-from App.apis.utils import outVideos, outComments
+from App.apis.utils import outVideos, outComments, serialize, HOST, parse_ymd
 
 
 @app.route('/')
@@ -25,25 +25,28 @@ def register():
         user = User(account=account, password=password, username=username, balance=0)
         db.session.add(user)
         db.session.commit()
-        return {"msg": "ok"}
+        return {"result": 4}
     else:
-        return {"msg": "用户已存在"}
+        return {"result": 5}
 
 
 # 修改信息
-@app.route('/setUserInfo',methods=['POST','GET'])
+@app.route('/setUserInfo',methods=['POST', 'GET'])
 def setUserInfo():
-    file = request.files['image']
     account = request.values.get("account")
-    password = request.values.get("password")
     username = request.values.get("username")
-    file.save("App/static/avatars/"+account+".jpg")
+    school = request.values.get("school")
+    gender = request.values.get("gender")
+    area = request.values.get("area")
+    birth = request.values.get("birth")
     user = db.session.query(User).filter_by(account=account).first()
-    user.avatarUrl = "/static/avatars/"+account+".jpg"
-    user.password = password
     user.username = username
+    user.area = area
+    user.school = school
+    user.gender = gender
+    user.birth = parse_ymd(birth)
     db.session.commit()
-    return {"msg": "ok"}
+    return {"result": 6}
 
 
 # 登陆
@@ -54,11 +57,11 @@ def login():
     user = db.session.query(User).filter_by(account=account).first()
     if user is not None:
         if user.password == password:
-            return {"msg": "ok"}
+            return {"result": 1}
         else:
-            return {"msg": "密码错误"}
+            return {"result": 2}
     else:
-        return {"msg": "账户不存在"}
+        return {"result": 3}
 
 
 # 上传视频
@@ -66,6 +69,7 @@ def login():
 def upload():
     # 从前端获取的各种参数
     file = request.files['video']
+    cover = request.files['cover']
     title = request.values.get("videoTitle")
     info = request.values.get("videoInfo")
     account = request.values.get("account")
@@ -74,8 +78,9 @@ def upload():
     video_id = str(uuid.uuid4())
     release_time = datetime.datetime.now()
     url = 'static/videos/'+video_id+".mp4"
+    cover_url = 'static/covers/'+video_id+".jpg"
     # video表的操作
-    new_video = Video(id=video_id, title=title, url=url, info=info, release_time=release_time, account=account)
+    new_video = Video(id=video_id, title=title, url=url, info=info, release_time=release_time, account=account,cover_url=cover_url)
     db.session.add(new_video)
     db.session.commit()
     # video_tag表的操作
@@ -85,9 +90,9 @@ def upload():
         db.session.commit()
     # 文件写入磁盘
     file.save("App/static/videos/"+video_id+".mp4")
+    cover.save("App/static/covers/"+video_id+".jpg")
     # 将结果返回客户端
-    resp = {"msg": "ok"}
-    return json.dumps(resp)
+    return {"result": 7}
 
 
 # 视频点赞和取消点赞
@@ -119,36 +124,7 @@ def likeAndDislike():
             lc = LikesCollects(account=account, video_id=videoID, if_like=True, like_time=datetime.datetime.now())
             db.session.add(lc)
     db.session.commit()
-    return {"msg": "ok"}
-
-
-# 视频收藏
-@app.route("/getCollected", methods=['POST','GET'])
-def getCollected():
-    flag = request.values.get("flag")
-    account = request.values.get("account")
-    videoID = request.values.get("videoID")
-    # 取消收藏
-    if flag == '0':
-        # user_video_list表中的操作
-        lc = db.session.query(LikesCollects).filter_by(account=account, video_id=videoID).first()
-        if lc is not None:
-            lc.if_collected = False
-        else:
-            lc = LikesCollects(account=account, video_id=videoID, if_collected=False)
-            db.session.add(lc)
-    else:  # 收藏
-        video = db.session.query(Video).filter_by(id=videoID).first()
-        video.coll_num = video.coll_num + 1
-
-        lc = db.session.query(LikesCollects).filter_by(account=account, video_id=videoID).first()
-        if lc is not None:
-            lc.if_collected = True
-        else:
-            lc = LikesCollects(account=account, video_id=videoID, if_collected=True)
-            db.session.add(lc)
-    db.session.commit()
-    return {"msg": "ok"}
+    return "ok"
 
 
 # 设置用户标签
@@ -160,7 +136,7 @@ def setUserTag():
         userTag = UserTag(account=account, favorite_tag=i)
         db.session.add(userTag)
         db.session.commit()
-    return {"msg": "ok"}
+    return "ok"
 
 
 # 评论视频
@@ -186,24 +162,6 @@ def videoComments():
     return {"comment": outList}
 
 
-# 获取推荐视频
-@app.route("/getRecommendedVideo", methods=['POST','GET'])
-def getRecommendedVideo():
-    account = request.values.get("account")
-    # 时间范围 前一天到现在
-    start = datetime.datetime.now() + datetime.timedelta(days=-1)
-    # 无登陆状态 没有用户
-    if account == '0':
-        # 按like_num/play_num的顺序返回
-        result = db.session.query(Video).filter(Video.release_time > start) \
-            .order_by(-Video.like_num / Video.play_num).limit(5).all()
-        outList = outVideos(result)
-        return {"videos": outList}
-    # 有登陆状态
-    else:
-        return {"msg": "还没有做呢！"}
-
-
 # 获取全部视频 测试用
 @app.route("/getAllVideos", methods=['POST','GET'])
 def getAllVideos():
@@ -212,7 +170,7 @@ def getAllVideos():
     return {"videos": outList}
 
 
-@app.route("/follow", methods=['POST','GET'])
+@app.route("/follow", methods=['POST', 'GET'])
 def follow():
     flag = request.values.get("flag")
     account = request.values.get("toFollow")
@@ -221,16 +179,16 @@ def follow():
         f = Follow(account=account, follower=follower)
         db.session.add(f)
         db.session.commit()
-        return {"msg": "ok"}
+        return "ok"
     else:
-        # f = db.session.query(Follow).filter_by(account=account, follower=follower).all()
-        # db.session.delete(f)
-        # db.session.commit()
-        return {"msg": "还不能unfollow sqlalchemy.orm.exc.UnmappedInstanceError: Class 'builtins.list' is not mapped，AttributeError: 'list' object has no attribute '_sa_instance_state' 不知道为啥"}
+        f = db.session.query(Follow).filter_by(account=account, follower=follower).first()
+        db.session.delete(f)
+        db.session.commit()
+        return "ok"
 
 
 # TODO 还没有排序
-@app.route("/userNew", methods=['POST','GET'])
+@app.route("/userNew", methods=['POST', 'GET'])
 def userNew():
     account = request.values.get("account")
     # 时间范围 半年前到现在
@@ -255,5 +213,38 @@ def userNew():
     return {"likeVideo": outLikeVideo, "uploadVideo": outUpLoadVideo, "comment": outComment}
 
 
+# 只有一个file参数的上传测试
+@app.route("/uploadTest",methods=['POST','GET'])
+def uploadTest():
+    file = request.files['file']
+    video_id = str(uuid.uuid4())
+    release_time = datetime.datetime.now()
+    url = 'static/videos/'+video_id+'.mp4'
+    new_video = Video(id=video_id,url=url,release_time = release_time, account = "ceshi")
+    db.session.add(new_video)
+    db.session.commit()
+    file.save("App/static/videos/"+video_id+'.mp4')
+    return "ok"
 
+
+# 获取用户信息
+@app.route("/getUserInfo",methods=["POST","GET"])
+def getUserInfo():
+    account = request.values.get("account")
+    user = db.session.query(User).filter_by(account=account).first()
+    outUser = serialize(user)
+    outUser['avatarUrl'] = HOST + outUser['avatarUrl']
+    return {"info": outUser}
+
+
+# 修改头像
+@app.route("/setAvatar", methods=["POST", "GET"])
+def setAvatar():
+    file = request.files['image']
+    account = request.values.get("account")
+    file.save("App/static/avatars/"+account+".jpg")
+    user = db.session.query(User).filter_by(account=account).first()
+    user.avatarUrl = "static/avatars/"+account+".jpg"
+    db.session.commit()
+    return {"result": 6}
 
