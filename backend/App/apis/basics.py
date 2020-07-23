@@ -6,12 +6,7 @@ import datetime
 import json
 from App import app, db
 from App.models import User, Video, VideoTag, LikesCollects, UserTag, Comments, Follow
-from App.apis.utils import outVideos, outComments, serialize, HOST, parse_ymd
-
-
-@app.route('/')
-def hello_world():
-    return 'Summer Video 服务器正常运行'
+from App.apis.utils import outVideos, outComments, serialize, HOST, parse_ymd, outComment
 
 
 # 用户注册
@@ -149,15 +144,18 @@ def setComment():
     cid = str(uuid.uuid4())
     comment = Comments(id=cid, account=account, video_id=videoID, content=content, head_comment_id=upper_id,release_time=datetime.datetime.now())
     db.session.add(comment)
+    video = db.session.query(Video).filter_by(id = videoID).first()
+    video.comment_num = video.comment_num + 1
+    out = outComment(comment)
     db.session.commit()
-    return {"msg": "ok", "comment_id": cid}
+    return {"msg": "ok", "comment": out}
 
 
 # 获取某视频评论树
 @app.route("/videoComments", methods=['POST','GET'])
 def videoComments():
     videoID = request.values.get("videoID")
-    comments = db.session.query(Comments).filter_by(video_id=videoID).all()
+    comments = db.session.query(Comments).filter_by(video_id=videoID).order_by(-Comments.release_time.desc()).all()
     outList = outComments(comments)
     return {"comment": outList}
 
@@ -175,6 +173,8 @@ def follow():
     flag = request.values.get("flag")
     account = request.values.get("toFollow")
     follower = request.values.get("account")
+    if account == follower:
+        return "不要关注自己啊"
     if flag == '1':
         f = Follow(account=account, follower=follower)
         db.session.add(f)
@@ -234,6 +234,16 @@ def getUserInfo():
     user = db.session.query(User).filter_by(account=account).first()
     outUser = serialize(user)
     outUser['avatarUrl'] = HOST + outUser['avatarUrl']
+    follows = db.session.query(Follow).filter(Follow.follower == account).all()
+    followers = db.session.query(Follow).filter(Follow.account == account).all()
+    followsNum = 0
+    followersNum = 0
+    for i in follows:
+        followsNum = followsNum+1
+    for i in followers:
+        followersNum = followersNum + 1
+    outUser['followsNum'] = followsNum
+    outUser['followersNum'] = followersNum
     return {"info": outUser}
 
 
@@ -247,4 +257,5 @@ def setAvatar():
     user.avatarUrl = "static/avatars/"+account+".jpg"
     db.session.commit()
     return {"result": 6}
+
 

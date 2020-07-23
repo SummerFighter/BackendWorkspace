@@ -91,19 +91,6 @@ def getRecommendedVideo():
         return {"videos": outList}
 
 
-# 返回关注对象
-@app.route("/myFollows", methods=['GET', 'POST'])
-def myFollows():
-    me = request.values.get("account")
-    users = db.session.query(Follow).filter(Follow.follower == me).all()
-    a = []
-    for i in users:
-        a.append(i.account)
-    aaa = db.session.query(User).filter(User.account.in_(a)).all()
-    out = outUser(aaa)
-    return {"myFollows": out}
-
-
 # 返回粉丝
 @app.route("/myFollowers", methods=["GET", "POST"])
 def myFollowers():
@@ -114,4 +101,33 @@ def myFollowers():
         a.append(i.follower)
     aaa = db.session.query(User).filter(User.account.in_(a)).all()
     out = outUser(aaa)
-    return {"myFollowers": out}
+
+    follower = db.session.query(Follow).filter(Follow.follower == me).all()
+    b = []
+    for i in follower:
+        b.append(i.account)
+    bbb = db.session.query(User).filter(User.account.in_(b)).all()
+    out_=outUser(bbb)
+
+    # 查询作品获赞数目最多的视频的作者
+    video = db.session.query(Video).order_by(Video.like_num.desc()).limit(8).all()
+    c = []
+    for v in video:
+        c.append(v.account)
+    # 在推荐列表中并且已经关注了的
+    ccc = db.session.query(User).filter(User.account.in_(c)).filter(User.account.in_(b)).all()
+    ddd = []
+    for i in ccc:
+        temp = serialize(i)
+        temp['avatarUrl'] = HOST + temp['avatarUrl']
+        temp['sign'] = 1
+        ddd.append(temp)
+
+    eee = db.session.query(User).filter(User.account.notin_(b)).filter(User.account.in_(c)).all()
+    for i in eee:
+        temp = serialize(i)
+        temp['avatarUrl'] = HOST + temp['avatarUrl']
+        temp['sign'] = 0
+        ddd.append(temp)
+
+    return {"myFollowers": out, "myFollows": out_, "recommends": ddd}

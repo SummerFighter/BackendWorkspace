@@ -46,6 +46,14 @@ def outComments(result):
     return outList
 
 
+def outComment(comment):
+    temp = serialize(comment)
+    user = db.session.query(User).filter_by(account=temp['account']).first()
+    temp['avatar_url'] = HOST + user.avatarUrl
+    temp['username'] = user.username
+    return temp
+
+
 def outUser(result):
     outList=[]
     for i in result:
@@ -53,5 +61,14 @@ def outUser(result):
         temp['avatarUrl'] = HOST+temp['avatarUrl']
         if temp['birth'] is not None:
             temp['birth'] = temp['birth'].strftime('%Y-%m-%d')
+        outList.append(temp)
+    return outList
+
+
+def outMessage(result):
+    outList = []
+    for i in result:
+        temp = serialize(i)
+        temp['userAvatarUrl']=HOST+temp['userAvatarUrl']
         outList.append(temp)
     return outList

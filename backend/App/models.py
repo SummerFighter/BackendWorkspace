@@ -26,15 +26,17 @@ class Video(db.Model):
     __tablename__ = "video"
     id = db.Column(db.String(200), primary_key=True)
     title = db.Column(db.String(255), unique=True)
-    url = db.Column(db.String(500), unique=True)  # 相对url 根目录下的位置 其实可以不要？
+    url = db.Column(db.String(500), unique=True)
     info = db.Column(db.Text)  # 视频简介
     release_time = db.Column(db.DateTime)
     play_num = db.Column(db.BigInteger, default=1)  # 播放量
     like_num = db.Column(db.BigInteger, default=0)  # 点赞量
     comment_num = db.Column(db.BigInteger, default=0)  # 评论数量
     cover_url = db.Column(db.String(200))
+    # isChecked = db.Column(db.Boolean, default=False)
     account = db.Column(db.String(100), db.ForeignKey('user.account'))  # 上传者
     tags = relationship("VideoTag", backref="video")
+    state = db.Column(db.Integer, default=0)
 
 
 # 用户对视频的点赞表
@@ -84,7 +86,19 @@ class VideoTag(db.Model):
 class Follow(db.Model):
     __tablename__ = "user_follow"
     account = db.Column(db.String(100), primary_key=True)
-    follower = db.Column(db.String(100),primary_key=True)
+    follower = db.Column(db.String(100), primary_key=True)
+
+
+# 用户消息
+class Message(db.Model):
+    __tablename__ = "message"
+    account = db.Column(db.String(100), primary_key=True)
+    fromAccount = db.Column(db.String(100), primary_key=True)
+    username = db.Column(db.String(100))  # 消息来自的那个账号的username
+    time = db.Column(db.DateTime,primary_key=True)
+    description = db.Column(db.String(200))
+    userAvatarUrl = db.Column(db.String(200))
+    # isSent = db.Column(db.Boolean, default=False)  # 发完就删掉吧
 
 
 # 当models.py直接被运行时运行，重新创建表
