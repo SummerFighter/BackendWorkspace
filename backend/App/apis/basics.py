@@ -6,7 +6,7 @@ import datetime
 import json
 from App import app, db
 from App.models import User, Video, VideoTag, LikesCollects, UserTag, Comments, Follow
-from App.apis.utils import outVideos, outComments, serialize, HOST, parse_ymd, outComment
+from App.apis.utils import outVideos, outComments, serialize, HOST, parse_ymd, outComment, outUser
 
 
 # 用户注册
@@ -50,9 +50,11 @@ def login():
     account = request.values.get("account")
     password = request.values.get("password")
     user = db.session.query(User).filter_by(account=account).first()
+    out = serialize(user)
+    out['avatarUrl']= HOST+out['avatarUrl']
     if user is not None:
         if user.password == password:
-            return {"result": 1}
+            return {"result": 1, "user": out}
         else:
             return {"result": 2}
     else:

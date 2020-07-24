@@ -35,6 +35,36 @@ def outVideos(result):
     return outList
 
 
+def outVideosWithAccount(result, likes, follows):
+    like = []
+    follow = []
+    for l in likes:
+        like.append(l.video_id)
+    for f in follows:
+        follow.append(f.account)
+    outList = []
+    for i in result:
+        realUrl = HOST + i.url
+        realCoverUrl = HOST+i.cover_url
+        temp = serialize(i)
+        temp['url'] = realUrl
+        temp['cover_url'] = realCoverUrl
+        temp['release_time'] = temp['release_time'].strftime('%Y-%m-%d %H: %M: %S')
+        user = db.session.query(User).filter_by(account=temp['account']).first()
+        temp['author_url'] = HOST+user.avatarUrl
+        if i.id in like:
+            temp['if_like'] = 1
+        else:
+            temp['if_like'] = 0
+        if i.account in follow:
+            temp['if_followed'] = 1
+        else:
+            temp['if_followed'] = 0
+        outList.append(temp)
+    return outList
+
+
+
 def outComments(result):
     outList=[]
     for i in result:

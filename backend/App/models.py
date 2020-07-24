@@ -36,7 +36,7 @@ class Video(db.Model):
     # isChecked = db.Column(db.Boolean, default=False)
     account = db.Column(db.String(100), db.ForeignKey('user.account'))  # 上传者
     tags = relationship("VideoTag", backref="video")
-    state = db.Column(db.Integer, default=0)
+    state = db.Column(db.String(50), default="未审核")
 
 
 # 用户对视频的点赞表

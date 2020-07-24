@@ -17,7 +17,7 @@ def getMessage():
     return {"message": out}
 
 
-# 举报视频
+# 举报视频  数据库中不记录被谁举报和举报原因哦
 @app.route('/reportVideo', methods=['POST', 'GET'])
 def reportVideo():
     account = request.values.get("account")
@@ -25,10 +25,10 @@ def reportVideo():
     description = request.values.get("description")
     # 先改video表里的状态
     video = db.session.query(Video).filter_by(id=videoID).first()
-    video.state = 2
+    video.state = "被举报"
     # 再添加消息
     new_message = Message(account=video.account,
-                          fromAccount=account,
+                          fromAccount="official",
                           description="你的视频被举报，原因："+description,
                           time=datetime.datetime.now(),
                           username="小麦视频官方",

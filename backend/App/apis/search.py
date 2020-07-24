@@ -6,7 +6,7 @@ import datetime
 import json
 from App import app, db
 from App.models import User, Video, VideoTag, LikesCollects, UserTag, Comments, Follow
-from App.apis.utils import outVideos, outUser, serialize, HOST, parse_ymd
+from App.apis.utils import outVideos, outUser, serialize, HOST, parse_ymd, outVideosWithAccount
 
 
 # 按标签搜索
@@ -66,7 +66,7 @@ def getRecommendedVideo():
     if account == '0':
         # 按like_num/play_num的顺序返回
         if refreshNum is not None:
-            result = db.session.query(Video).filter(Video.release_time > start) \
+            result = db.session.query(Video).filter(Video.release_time > start).filter_by(state="审核通过") \
             .order_by(-Video.like_num / Video.play_num).offset(int(refreshNum)*5).limit(5).all()
         else:
             result =  db.session.query(Video).filter(Video.release_time > start) \
@@ -78,13 +78,16 @@ def getRecommendedVideo():
         return {"videos": outList}
     # 有登陆状态
     else:
+        likes = db.session.query(LikesCollects).filter_by(account=account, if_like=True).all()
+        follows = db.session.query(Follow).filter_by(follower = account).all()
         if refreshNum is not None:
-            result = db.session.query(Video).filter(Video.release_time > start) \
+            result = db.session.query(Video).filter(Video.release_time > start).filter_by(state="审核通过") \
             .order_by(-Video.like_num / Video.play_num).offset(int(refreshNum)*5).limit(5).all()
         else:
-            result =  db.session.query(Video).filter(Video.release_time > start) \
+            result = db.session.query(Video).filter(Video.release_time > start) \
             .order_by(-Video.like_num / Video.play_num).limit(5).all()
-        outList = outVideos(result)
+
+        outList = outVideosWithAccount(result, likes, follows)
         for r in result:
             r.play_num = r.play_num + 1
         db.session.commit()
