@@ -10,9 +10,9 @@ from App.models import Message, Video, User
 @app.route('/getMessage', methods=['POST', 'GET'])
 def getMessage():
     account = request.values.get("account")
-    result = db.session.query(Message).filter_by(account=account).all()
+    result = db.session.query(Message).filter_by(account=account).order_by(Message.time.desc()).all()
     out = outMessage(result)
-    [db.session.delete(m) for m in result]
+    # [db.session.delete(m) for m in result]
     db.session.commit()
     return {"message": out}
 

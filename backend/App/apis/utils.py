@@ -35,7 +35,7 @@ def outVideos(result):
     return outList
 
 
-def outVideosWithAccount(result, likes, follows):
+def outVideosWithAccount(result, likes, follows,account):
     like = []
     follow = []
     for l in likes:
@@ -56,7 +56,7 @@ def outVideosWithAccount(result, likes, follows):
             temp['if_like'] = 1
         else:
             temp['if_like'] = 0
-        if i.account in follow:
+        if i.account in follow or i.account == account:
             temp['if_followed'] = 1
         else:
             temp['if_followed'] = 0
@@ -72,6 +72,7 @@ def outComments(result):
         user = db.session.query(User).filter_by(account=temp['account']).first()
         temp['avatar_url'] = HOST + user.avatarUrl
         temp['username'] = user.username
+        temp['release_time'] = temp['release_time'].strftime( '%Y-%m-%d %H:%M:%S' )
         outList.append(temp)
     return outList
 
@@ -81,6 +82,7 @@ def outComment(comment):
     user = db.session.query(User).filter_by(account=temp['account']).first()
     temp['avatar_url'] = HOST + user.avatarUrl
     temp['username'] = user.username
+    temp['release_time'] = temp['release_time'].strftime( '%Y-%m-%d %H:%M:%S' )
     return temp
 
 
@@ -100,5 +102,6 @@ def outMessage(result):
     for i in result:
         temp = serialize(i)
         temp['userAvatarUrl']=HOST+temp['userAvatarUrl']
+        temp['time']=temp['time'].strftime('%Y-%m-%d %H: %M: %S')
         outList.append(temp)
     return outList

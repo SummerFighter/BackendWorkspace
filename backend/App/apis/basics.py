@@ -6,7 +6,7 @@ import datetime
 import json
 from App import app, db
 from App.models import User, Video, VideoTag, LikesCollects, UserTag, Comments, Follow
-from App.apis.utils import outVideos, outComments, serialize, HOST, parse_ymd, outComment, outUser
+from App.apis.utils import outVideos, outComments, serialize, HOST, parse_ymd, outComment
 
 
 # 用户注册
@@ -51,7 +51,25 @@ def login():
     password = request.values.get("password")
     user = db.session.query(User).filter_by(account=account).first()
     out = serialize(user)
-    out['avatarUrl']= HOST+out['avatarUrl']
+    out['avatarUrl'] = HOST+out['avatarUrl']
+    aa = db.session.query(Video).filter_by(account=account).all()
+    likeNum = 0
+    for a in aa:
+        likeNum = likeNum +1
+    out['likeNum'] = likeNum
+    bb = db.session.query(Follow).filter_by(account=account).all()
+    followerNum = 0
+    for b in bb:
+        followerNum = followerNum + 1
+    out['followerNum'] = followerNum
+    cc = db.session.query(Follow).filter_by(follower=account).all()
+    followNum = 0
+    for c in cc:
+        followNum = followNum + 1
+    out['followNum'] = followNum
+    if out['birth'] is not None:
+        out['birth'] = out['birth'].strftime('%Y-%m-%d')
+
     if user is not None:
         if user.password == password:
             return {"result": 1, "user": out}
@@ -236,6 +254,8 @@ def getUserInfo():
     user = db.session.query(User).filter_by(account=account).first()
     outUser = serialize(user)
     outUser['avatarUrl'] = HOST + outUser['avatarUrl']
+    if outUser['birth'] is not None:
+        outUser['birth'] = outUser['birth'].strftime('%Y-%m-%d')
     follows = db.session.query(Follow).filter(Follow.follower == account).all()
     followers = db.session.query(Follow).filter(Follow.account == account).all()
     followsNum = 0
@@ -254,10 +274,11 @@ def getUserInfo():
 def setAvatar():
     file = request.files['image']
     account = request.values.get("account")
-    file.save("App/static/avatars/"+account+".jpg")
+    iiid = video_id = str(uuid.uuid4())
+    file.save("App/static/avatars/"+iiid+".jpg")
     user = db.session.query(User).filter_by(account=account).first()
-    user.avatarUrl = "static/avatars/"+account+".jpg"
+    user.avatarUrl = "static/avatars/"+iiid+".jpg"
     db.session.commit()
-    return {"result": 6}
+    return {"result": 6, "avatarUrl": HOST+user.avatarUrl}
 
 

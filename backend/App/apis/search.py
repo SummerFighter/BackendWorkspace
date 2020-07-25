@@ -87,7 +87,7 @@ def getRecommendedVideo():
             result = db.session.query(Video).filter(Video.release_time > start) \
             .order_by(-Video.like_num / Video.play_num).limit(5).all()
 
-        outList = outVideosWithAccount(result, likes, follows)
+        outList = outVideosWithAccount(result, likes, follows,account)
         for r in result:
             r.play_num = r.play_num + 1
         db.session.commit()
